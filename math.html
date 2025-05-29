@@ -1,0 +1,1094 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sammy's Math Explorers Avatar App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom animations for messages and modals */
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+        @keyframes scaleUp {
+            from {
+                transform: scale(0.95);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+        @keyframes pulseSlow {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+        }
+        .animate-slide-in-right {
+            animation: slideInRight 0.3s ease-out forwards;
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.3s ease-out forwards;
+        }
+        .animate-scale-up {
+            animation: scaleUp 0.3s ease-out forwards;
+        }
+        .animate-pulse-slow {
+            animation: pulseSlow 2s infinite ease-in-out;
+        }
+        body {
+            font-family: "Inter", sans-serif;
+            margin: 0;
+            overflow-x: hidden; /* Prevent horizontal scrolling */
+        }
+        /* Ensure responsive font sizes for all elements */
+        h1, h2, h3, h4, p, span, strong, button, input, label, li {
+            font-size: clamp(0.75rem, 2vw, 1.5rem); /* Responsive font size */
+        }
+        /* Specific adjustments for smaller text elements */
+        .text-xs { font-size: clamp(0.65rem, 1.5vw, 0.85rem); }
+        .text-sm { font-size: clamp(0.75rem, 1.75vw, 1rem); }
+        .text-base { font-size: clamp(0.875rem, 2vw, 1.125rem); }
+        .text-lg { font-size: clamp(1rem, 2.25vw, 1.25rem); }
+        .text-xl { font-size: clamp(1.125rem, 2.5vw, 1.5rem); }
+        .text-2xl { font-size: clamp(1.25rem, 3vw, 1.875rem); }
+        .text-3xl { font-size: clamp(1.5rem, 3.5vw, 2.25rem); }
+        .text-4xl { font-size: clamp(1.875rem, 4vw, 2.5rem); }
+        .text-5xl { font-size: clamp(2.25rem, 5vw, 3rem); }
+
+        /* Ensure responsive padding and margin */
+        .p-4 { padding: clamp(1rem, 3vw, 2rem); }
+        .sm\\:p-6 { padding: clamp(1.5rem, 4vw, 2.5rem); }
+        .lg\\:p-8 { padding: clamp(2rem, 5vw, 3rem); }
+        .mb-4 { margin-bottom: clamp(1rem, 2vw, 1.5rem); }
+        .mt-6 { margin-top: clamp(1.5rem, 3vw, 2.5rem); }
+        .space-x-2 > *:not(:first-child) { margin-left: clamp(0.5rem, 1vw, 0.75rem); }
+        .space-y-6 > *:not(:first-child) { margin-top: clamp(1.5rem, 3vw, 2.5rem); }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
+
+
+    <script type="text/babel">
+        // Global variables provided by the Canvas environment (or fallbacks for local testing)
+        window.__firebase_config = JSON.stringify({
+          apiKey: "AIzaSyB-HNU5ftwHQctX2wPBA1eILaBtwSatWNs",
+          authDomain: "math-explorers-90ca8.firebaseapp.com",
+          projectId: "math-explorers-90ca8",
+          storageBucket: "math-explorers-90ca8.firebasestorage.app",
+          messagingSenderId: "624369960795",
+          appId: "1:624369960795:web:a98501ae90a9c25b14fc7e"
+        });
+        window.__app_id = 'math-explorers-90ca8';
+        window.__initial_auth_token = null;
+
+        const { useState, useEffect, useCallback, Fragment, useRef } = React;
+        const { createRoot } = ReactDOM;
+
+        // --- Math-Themed Avatar Parts Definitions with Prices ---
+        const avatarOptions = {
+            head: [
+                { id: 'head1', name: 'Aqua Orb', icon: '👤', color: 'bg-gradient-to-br from-sky-400 to-cyan-500', shape: 'rounded-full', price: 0 },
+                { id: 'head2', name: 'Terra Cube', icon: '⚙️', color: 'bg-gradient-to-br from-emerald-400 to-green-500', shape: 'rounded-xl', price: 50 },
+                { id: 'head3', name: 'Solar Flare', icon: '⚡', color: 'bg-gradient-to-br from-amber-400 to-orange-500', shape: 'rounded-lg', wide: true, price: 100 },
+                { id: 'head4', name: 'Cosmic Egg', icon: '✨', color: 'bg-gradient-to-br from-purple-500 to-indigo-600', shape: 'rounded-t-full rounded-b-lg', price: 150 },
+            ],
+            body: [
+                { id: 'body1', name: 'Ruby Shell', icon: '🛡️', color: 'bg-gradient-to-br from-red-500 to-rose-600', shape: 'rounded-t-lg', price: 0 },
+                { id: 'body2', name: 'Amethyst Core', icon: '👁️', color: 'bg-gradient-to-br from-purple-500 to-violet-600', shape: 'rounded-t-md', slim: true, price: 75 },
+                { id: 'body3', name: 'Obsidian Plate', icon: '☁️', color: 'bg-gradient-to-br from-slate-600 to-gray-700', shape: 'rounded-t-xl', broad: true, price: 120 },
+                { id: 'body4', name: 'Golden Guard', icon: '⭐', color: 'bg-gradient-to-br from-yellow-400 to-amber-500', shape: 'rounded-lg', price: 180 },
+            ],
+            accessory: [
+                { id: 'accNone', name: 'No Accessory', icon: '❌', item: null, price: 0 },
+                { id: 'accSun', name: 'Sunstone', icon: '☀️', item: '☀️', price: 25 },
+                { id: 'accMoon', name: 'Moonpearl', icon: '🌙', item: '🌙', price: 25 },
+                { id: 'accStar', name: 'Star Shard', icon: '⭐', item: '⭐', price: 30 },
+                { id: 'accHeart', name: 'Heart Gem', icon: '❤️', item: '❤️', price: 40 },
+                { id: 'accBrain', name: 'Mind Crystal', icon: '🧠', item: '🧠', price: 60 },
+            ],
+        };
+
+        const defaultAvatarConfig = {
+            head: avatarOptions.head[0].id,
+            body: avatarOptions.body[0].id,
+            accessory: avatarOptions.accessory[0].id,
+        };
+
+        // --- Helper Components ---
+        const Button = ({ onClick, children, className = '', disabled = false, type = 'button', variant = 'primary', size = 'md' }) => {
+            const baseStyle = "font-semibold rounded-lg shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-opacity-75 transition-all duration-150 ease-in-out disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center";
+            const sizeStyles = {
+                sm: 'px-3 py-1.5 text-xs',
+                md: 'px-4 py-2 text-sm',
+                lg: 'px-6 py-3 text-base'
+            };
+            const variantStyles = {
+                primary: 'text-white bg-blue-600 hover:bg-blue-700 focus:ring-blue-500',
+                secondary: 'text-blue-700 bg-blue-100 hover:bg-blue-200 focus:ring-blue-300',
+                danger: 'text-white bg-red-600 hover:bg-red-700 focus:ring-red-500',
+                success: 'text-white bg-green-500 hover:bg-green-600 focus:ring-green-400',
+                warning: 'text-white bg-yellow-500 hover:bg-yellow-600 focus:ring-yellow-400',
+                ghost: 'text-gray-700 bg-transparent hover:bg-gray-100 focus:ring-gray-300',
+            };
+
+            return (
+                <button
+                    onClick={onClick}
+                    disabled={disabled}
+                    type={type}
+                    className={`${baseStyle} ${sizeStyles[size]} ${variantStyles[variant]} ${className}`}
+                >
+                    {children}
+                </button>
+            );
+        };
+
+        const IconButton = ({ onClick, children, className = '', ariaLabel, disabled = false, variant = 'default', size = 'md' }) => {
+            const baseStyle = "rounded-full focus:outline-none focus:ring-2 focus:ring-opacity-75 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center";
+            const sizeStyles = {
+                sm: 'p-1.5',
+                md: 'p-2',
+                lg: 'p-3'
+            };
+            const variantStyles = {
+                default: 'text-gray-600 bg-gray-200 hover:bg-gray-300 focus:ring-gray-400',
+                primary: 'text-blue-600 bg-blue-100 hover:bg-blue-200 focus:ring-blue-400',
+                transparent: 'text-gray-500 hover:text-gray-700 hover:bg-gray-100 focus:ring-gray-300'
+            };
+            return (
+                <button
+                    onClick={onClick}
+                    aria-label={ariaLabel}
+                    disabled={disabled}
+                    className={`${baseStyle} ${sizeStyles[size]} ${variantStyles[variant]} ${className}`}
+                >
+                    {children}
+                </button>
+            );
+        };
+
+        const MessageBox = ({ message, type, onClose }) => {
+            if (!message) return null;
+
+            let bgColor = 'bg-blue-500';
+            let textColor = 'text-blue-100';
+            let borderColor = 'border-blue-600';
+            let Icon = 'ℹ️'; // Info icon
+
+            if (type === 'error') { bgColor = 'bg-red-500'; textColor = 'text-red-100'; borderColor = 'border-red-600'; Icon = '⚠️'; } // AlertTriangle
+            if (type === 'success') { bgColor = 'bg-green-500'; textColor = 'text-green-100'; borderColor = 'border-green-600'; Icon = '✅'; } // CheckCircle
+            if (type === 'info') { bgColor = 'bg-sky-500'; textColor = 'text-sky-100'; borderColor = 'border-sky-600'; Icon = 'ℹ️'; } // Info
+
+            return (
+                <div className={`fixed top-6 right-6 p-4 rounded-lg text-white shadow-2xl ${bgColor} border-2 ${borderColor} z-[200] max-w-sm flex items-start animate-slide-in-right`}>
+                    <span className={`mr-3 flex-shrink-0 mt-0.5 text-xl ${textColor === 'text-white' ? '' : textColor}`}>{Icon}</span>
+                    <span className="flex-grow text-sm font-medium">{message}</span>
+                    <button onClick={onClose} className={`ml-4 text-xl leading-none hover:text-opacity-75 ${textColor === 'text-white' ? '' : textColor}`}>&times;</button>
+                </div>
+            );
+        };
+
+        const InputField = ({ label, type, value, onChange, placeholder, icon, error, name }) => (
+            <div className="mb-5">
+                <label htmlFor={name} className="block text-sm font-medium text-gray-700 mb-1.5">{label}</label>
+                <div className="relative rounded-md shadow-sm">
+                    {icon && <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">{icon}</div>}
+                    <input
+                        id={name}
+                        name={name}
+                        type={type}
+                        value={value}
+                        onChange={onChange}
+                        placeholder={placeholder}
+                        className={`w-full px-3 py-2.5 border ${error ? 'border-red-400' : 'border-gray-300'} rounded-lg 
+                                        focus:outline-none focus:ring-2 ${error ? 'focus:ring-red-500 focus:border-red-500' : 'focus:ring-blue-500 focus:border-blue-500'} 
+                                        transition-colors duration-150 ease-in-out
+                                        ${icon ? 'pl-10' : ''}`}
+                    />
+                </div>
+                {error && <p className="text-xs text-red-600 mt-1.5">{error}</p>}
+            </div>
+        );
+
+        // --- Modal Component ---
+        const Modal = ({ isOpen, onClose, title, children, onConfirm, confirmText = "Confirm", cancelText = "Cancel", confirmVariant = "primary" }) => {
+            if (!isOpen) return null;
+
+            return (
+                <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center p-4 z-[150] animate-fade-in">
+                    <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md transform transition-all duration-300 ease-out scale-95 animate-scale-up">
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-xl font-semibold text-gray-800">{title}</h3>
+                            <IconButton onClick={onClose} ariaLabel="Close modal" variant="transparent" size="sm">
+                                ❌
+                            </IconButton>
+                        </div>
+                        <div className="text-gray-600 mb-6 text-sm">
+                            {children}
+                        </div>
+                        <div className="flex justify-end space-x-3">
+                            <Button onClick={onClose} variant="ghost">
+                                {cancelText}
+                            </Button>
+                            {onConfirm && (
+                                <Button onClick={onConfirm} variant={confirmVariant}>
+                                    {confirmText}
+                                </Button>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+
+        // --- App Views ---
+        // AuthView now accepts 'auth', 'db', and 'appId' as props
+        const AuthView = ({ onSetView, onSetMessage, auth, db, appId }) => {
+            const [email, setEmail] = useState('');
+            const [password, setPassword] = useState('');
+            const [username, setUsername] = useState('');
+            const [isLogin, setIsLogin] = useState(true);
+            const [isLoading, setIsLoading] = useState(false);
+            const [errors, setErrors] = useState({});
+
+            const validateForm = () => {
+                const newErrors = {};
+                if (!email.trim()) newErrors.email = "Email is required.";
+                else if (!/\S+@\S+\.\S+/.test(email)) newErrors.email = "Email is invalid.";
+                if (!password) newErrors.password = "Password is required.";
+                else if (password.length < 6) newErrors.password = "Password must be at least 6 characters.";
+                if (!isLogin && !username.trim()) newErrors.username = "Username is required for signup.";
+                else if (!isLogin && username.trim().length < 3) newErrors.username = "Username must be at least 3 characters.";
+                setErrors(newErrors);
+                return Object.keys(newErrors).length === 0;
+            };
+
+            const handleSubmit = async (e) => {
+                e.preventDefault();
+                if (!validateForm()) return;
+
+                setIsLoading(true);
+                setErrors({});
+                onSetMessage('', '');
+
+                try {
+                    if (isLogin) {
+                        await auth.signInWithEmailAndPassword(email, password);
+                        onSetMessage('Logged in successfully! Redirecting...', 'success');
+                    } else {
+                        const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+                        await userCredential.user.updateProfile({ displayName: username.trim() });
+
+                        const userDocRef = db.collection(`artifacts/${appId}/users/${userCredential.user.uid}/profile`).doc('data');
+                        await userDocRef.set({
+                            email: userCredential.user.email,
+                            displayName: username.trim(),
+                            coins: 100,
+                            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                            avatarConfig: defaultAvatarConfig,
+                            purchasedItems: [defaultAvatarConfig.head, defaultAvatarConfig.body, defaultAvatarConfig.accessory]
+                        });
+                        
+                        await userCredential.user.sendEmailVerification();
+                        onSetMessage('Signup successful! Please check your email to verify your account.', 'success');
+                        onSetView('verify-email');
+                    }
+                } catch (error) {
+                    console.error("Auth error:", error);
+                    const friendlyMessage = error.code === 'auth/invalid-credential' ? 'Invalid email or password.' : error.message;
+                    onSetMessage(friendlyMessage, 'error');
+                    setErrors({ form: friendlyMessage });
+                } finally {
+                    setIsLoading(false);
+                }
+            };
+
+            return (
+                <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-tr from-slate-900 via-sky-800 to-indigo-900 p-4 selection:bg-sky-500 selection:text-white">
+                    <div className="w-full max-w-md bg-white/90 backdrop-blur-md p-8 sm:p-10 rounded-xl shadow-2xl border border-slate-300/50">
+                        <div className="text-center mb-8">
+                            <span className="text-5xl mx-auto text-sky-500 mb-3 block">✨</span>
+                            <h2 className="text-3xl font-bold text-gray-800">
+                                {isLogin ? 'Welcome Back!' : 'Create Your Avatar Account'}
+                            </h2>
+                            <p className="text-gray-600 mt-1 text-sm">{isLogin ? 'Login to Math Explorers' : 'Join us and unleash your creativity!'}</p> {/* Changed text here */}
+                        </div>
+                        <form onSubmit={handleSubmit} className="space-y-6">
+                            {!isLogin && (
+                                <InputField
+                                    label="Username"
+                                    name="username"
+                                    type="text"
+                                    value={username}
+                                    onChange={(e) => setUsername(e.target.value)}
+                                    placeholder="Choose a cool username"
+                                    icon="➕👤"
+                                    error={errors.username}
+                                />
+                            )}
+                            <InputField
+                                label="Email Address"
+                                name="email"
+                                type="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                placeholder="you@example.com"
+                                icon="✉️"
+                                error={errors.email}
+                            />
+                            <InputField
+                                label="Password"
+                                name="password"
+                                type="password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                placeholder="••••••••"
+                                icon="🔑"
+                                error={errors.password}
+                            />
+                            {errors.form && <p className="text-sm text-red-600 -mt-3 text-center bg-red-100 p-2 rounded-md">{errors.form}</p>}
+                            <Button type="submit" className="w-full !py-3" disabled={isLoading} variant="primary">
+                                {isLoading ? <span className="animate-spin mr-2">🔄</span> : (isLogin ? 'Login' : 'Sign Up & Get Started')}
+                                {isLoading && (isLogin ? 'Logging In...' : 'Creating Account...')}
+                            </Button>
+                        </form>
+                        <p className="text-center text-sm text-gray-600 mt-8">
+                            {isLogin ? "Don't have an account?" : "Already have an account?"}
+                            <button onClick={() => { setIsLogin(!isLogin); setErrors({}); setEmail(''); setPassword(''); setUsername(''); }} className="font-semibold text-sky-600 hover:text-sky-700 hover:underline ml-1 transition-colors">
+                                {isLogin ? 'Sign Up Now' : 'Login Instead'}
+                            </button>
+                        </p>
+                    </div>
+                    <p className="text-center text-xs text-slate-400 mt-8">App ID: {appId}</p>
+                </div>
+            );
+        };
+
+        // VerifyEmailView now accepts 'auth' as prop
+        const VerifyEmailView = ({ userEmail, onSetMessage, auth }) => {
+            const [isLoading, setIsLoading] = useState(false);
+
+            const handleResendVerification = async () => {
+                if (auth.currentUser) {
+                    setIsLoading(true);
+                    try {
+                        await auth.currentUser.sendEmailVerification();
+                        onSetMessage('Verification email resent. Please check your inbox (and spam folder).', 'success');
+                    } catch (error) {
+                        onSetMessage(`Error resending email: ${error.message}`, 'error');
+                    } finally {
+                        setIsLoading(false);
+                    }
+                }
+            };
+
+            return (
+                <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-purple-600 via-indigo-600 to-blue-700 p-4 text-center selection:bg-indigo-400 selection:text-white">
+                    <div className="bg-white/95 backdrop-blur-md p-8 sm:p-10 rounded-xl shadow-2xl max-w-lg border border-slate-300/30">
+                        <span className="text-6xl mx-auto text-indigo-500 mb-6 block animate-bounce">✉️</span>
+                        <h2 className="text-3xl font-bold text-gray-800 mb-4">Verify Your Email</h2>
+                        <p className="text-gray-600 mb-6 text-base">
+                            A verification link has been sent to <strong className="text-indigo-700 font-semibold">{userEmail}</strong>.
+                            Please click the link in the email to activate your account.
+                        </p>
+                        <p className="text-sm text-gray-500 mb-2">
+                            If you don't see the email, please check your spam or junk folder.
+                        </p>
+                        <div className="mt-8 space-y-3">
+                            <Button onClick={handleResendVerification} variant="success" className="w-full" disabled={isLoading}>
+                                {isLoading ? <span className="animate-spin mr-2">🔄</span> : <span className="mr-2">✉️</span>}
+                                {isLoading ? 'Sending...' : 'Resend Verification Email'}
+                            </Button>
+                            <Button onClick={() => { auth.signOut(); onSetMessage("Logged out.", "info"); }} variant="ghost" className="w-full">
+                                <span className="mr-2">🚪</span> Logout
+                            </Button>
+                        </div>
+                        <p className="text-xs text-gray-400 mt-10">Once verified, you might need to refresh this page or log in again.</p>
+                    </div>
+                </div>
+            );
+        };
+
+        // DashboardView now accepts 'auth', 'db', and 'appId' as props
+        const DashboardView = ({ user, userData, onSetView, onSignOut, onSetMessage, auth, db, appId }) => {
+            const [isQuizModalOpen, setIsQuizModalOpen] = useState(false);
+            const [quizAnswer, setQuizAnswer] = useState('');
+            const [quizError, setQuizError] = useState('');
+
+            const handleQuizSubmit = async () => {
+                if (quizAnswer.trim() === "4") {
+                    try {
+                        const userDocRef = db.collection(`artifacts/${appId}/users/${user.uid}/profile`).doc('data');
+                        await userDocRef.update({
+                            coins: firebase.firestore.FieldValue.increment(10)
+                        });
+                        onSetMessage("Correct! You earned 10 coins.", "success");
+                        setIsQuizModalOpen(false);
+                        setQuizAnswer('');
+                        setQuizError('');
+                    } catch (error) {
+                        onSetMessage(`Error awarding coins: ${error.message}`, "error");
+                        setQuizError(`Error: ${error.message}`);
+                    }
+                } else {
+                    setQuizError("Incorrect answer. Try again!");
+                }
+            };
+
+            if (!userData) return (
+                <div className="flex flex-col justify-center items-center h-screen bg-slate-100">
+                    <span className="animate-spin text-sky-500 text-6xl">🔄</span>
+                    <p className="mt-4 text-slate-600">Loading your dashboard...</p>
+                </div>
+            );
+
+            return (
+                <div>
+                    <div className="min-h-screen bg-slate-100 p-4 sm:p-6 lg:p-8 selection:bg-sky-500 selection:text-white">
+                        <div className="max-w-5xl mx-auto">
+                            <header className="flex flex-col sm:flex-row justify-between items-center mb-8 pb-6 border-b border-slate-300">
+                                <div className="mb-4 sm:mb-0 text-center sm:text-left">
+                                    <h1 className="text-3xl md:text-4xl font-bold text-slate-800">Welcome, {userData.displayName || 'User'}!</h1>
+                                    <p className="text-slate-600 mt-1">Here's your avatar dashboard.</p>
+                                </div>
+                                <div className="flex items-center space-x-3">
+                                    <div className="flex items-center bg-gradient-to-r from-yellow-400 to-amber-500 text-white px-4 py-2 rounded-full shadow-lg">
+                                        <span className="mr-2">💰</span>
+                                        <span className="font-semibold">{userData.coins} Coins</span>
+                                    </div>
+                                    <Button onClick={onSignOut} variant="danger" size="md">
+                                        <span className="mr-1.5">🚪</span> Logout
+                                    </Button>
+                                </div>
+                            </header>
+
+                            <div className="grid md:grid-cols-2 gap-6 lg:gap-8">
+                                {/* Avatar Card */}
+                                <div className="bg-white p-6 rounded-xl shadow-xl hover:shadow-2xl transition-shadow duration-300">
+                                    <h2 className="text-2xl font-semibold text-slate-700 mb-5 flex items-center">
+                                        <span className="mr-3 text-sky-500 text-3xl">👤</span> Your Current Avatar
+                                    </h2>
+                                    <div className="flex justify-center mb-6 transform hover:scale-105 transition-transform duration-300">
+                                        <AvatarPreview config={userData.avatarConfig || defaultAvatarConfig} scale={1.1} />
+                                    </div>
+                                    <Button onClick={() => onSetView('customize-avatar')} variant="primary" className="w-full !py-2.5">
+                                        <span className="mr-2">✏️</span> Customize Your Avatar
+                                    </Button>
+                                </div>
+
+                                {/* Profile & Actions Card */}
+                                <div className="bg-white p-6 rounded-xl shadow-xl hover:shadow-2xl transition-shadow duration-300 space-y-6">
+                                    <div>
+                                        <h2 className="text-2xl font-semibold text-slate-700 mb-4 flex items-center">
+                                            <span className="mr-3 text-indigo-500 text-3xl">ℹ️</span> Profile Details
+                                        </h2>
+                                        <p className="text-slate-600 mb-2"><strong className="font-medium text-slate-700">Email:</strong> {user.email}</p>
+                                        <p className="text-slate-600 mb-1"><strong className="font-medium text-slate-700">User ID:</strong></p>
+                                        <p className="text-xs text-slate-500 bg-slate-100 p-2 rounded break-all">{user.uid}</p>
+                                    </div>
+                                    <div className="border-t border-slate-200 pt-6">
+                                        <h3 className="text-xl font-semibold text-slate-700 mb-3 flex items-center">
+                                            <span className="mr-3 text-green-500 text-2xl">🎁</span> Earn Coins
+                                        </h3>
+                                        <p className="text-sm text-slate-600 mb-4">Test your knowledge and earn some coins for new avatar parts!</p>
+                                        <Button onClick={() => { setIsQuizModalOpen(true); setQuizAnswer(''); setQuizError(''); }} variant="success" className="w-full !py-2.5">
+                                            <span className="mr-2">✨</span> Take a Quick Quiz
+                                        </Button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Gemini AI Teaser Card */}
+                            <div className="mt-6 lg:mt-8 bg-gradient-to-r from-purple-600 to-indigo-700 text-white p-6 rounded-xl shadow-xl hover:shadow-2xl transition-shadow duration-300">
+                                <div className="flex items-center mb-3">
+                                    <span className="mr-3 text-purple-300 text-3xl">🧠</span>
+                                    <h2 className="text-2xl font-semibold">Gemini AI Features</h2>
+                                </div>
+                                <p className="text-purple-200 mb-5">
+                                    Unlock the power of AI! Generate unique backstories and get name suggestions for your avatar in the customizer.
+                                </p>
+                                <Button onClick={() => onSetView('customize-avatar')} variant="secondary" className="!text-purple-700 !bg-purple-200 hover:!bg-purple-300">
+                                    <span className="mr-2">✨</span> Explore AI Customizations
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                    {/* Purchase Confirmation Modal */}
+                    <Modal
+                        isOpen={isQuizModalOpen}
+                        onClose={() => setIsQuizModalOpen(false)}
+                        title="Quick Quiz Time!"
+                        onConfirm={handleQuizSubmit}
+                        confirmText={isLoading ? "Submitting..." : "Submit Answer"}
+                        confirmVariant="primary"
+                    >
+                        <p className="mb-4">What is 2 + 2?</p>
+                        <InputField
+                            name="quizAnswer"
+                            type="text"
+                            value={quizAnswer}
+                            onChange={(e) => { setQuizAnswer(e.target.value); setQuizError(''); }}
+                            placeholder="Enter your answer"
+                            error={quizError}
+                        />
+                    </Modal>
+                </div>
+            );
+        };
+
+
+        // --- Avatar Components ---
+        const AvatarPreview = ({ config, scale = 1 }) => {
+            const headStyle = avatarOptions.head.find(h => h.id === config.head) || avatarOptions.head[0];
+            const bodyStyle = avatarOptions.body.find(b => b.id === config.body) || avatarOptions.body[0];
+            const accessory = avatarOptions.accessory.find(a => a.id === config.accessory) || avatarOptions.accessory[0];
+
+            return (
+                <div
+                    className="flex flex-col items-center justify-end w-48 min-h-[18rem] bg-gradient-to-br from-slate-200 to-gray-300 rounded-2xl shadow-inner p-4 relative overflow-hidden border-2 border-white/50"
+                    style={{ transform: `scale(${scale})` }}
+                >
+                    {/* Head */}
+                    <div
+                        className={`w-20 h-20 ${headStyle.color} ${headStyle.shape} mb-[-12px] z-10 flex items-center justify-center text-white text-2xl shadow-xl border-2 border-white/70 transform transition-all duration-300 ease-out`}
+                        style={{ width: headStyle.wide ? '100px' : '80px' }}
+                    >
+                        <span className="text-2xl">{headStyle.icon}</span> {/* Render head icon */}
+                    </div>
+                    {/* Body */}
+                    <div
+                        className={`w-32 h-36 ${bodyStyle.color} ${bodyStyle.shape} flex items-center justify-start pt-10 flex-col text-white text-3xl shadow-xl border-2 border-white/70 transform transition-all duration-300 ease-out`}
+                        style={{ width: bodyStyle.slim ? '100px' : (bodyStyle.broad ? '140px' : '128px') }}
+                    >
+                        <span className="text-3xl">{bodyStyle.icon}</span> {/* Render body icon */}
+                        {/* Accessory */}
+                        {accessory.item && (
+                            <span className="text-5xl mt-1 drop-shadow-lg animate-pulse-slow">{accessory.item}</span>
+                        )}
+                        {!accessory.item && accessory.icon && <span className="text-4xl opacity-80">{accessory.icon}</span>}
+                    </div>
+                    <div className="absolute bottom-2 left-2 right-2 text-center mt-3 p-1.5 bg-black/20 rounded-md backdrop-blur-sm">
+                        <p className="text-[10px] text-white font-semibold truncate">{headStyle.name} / {bodyStyle.name}</p>
+                        <p className="text-[9px] text-gray-200 truncate">Accessory: {accessory.name}</p>
+                    </div>
+                </div>
+            );
+        };
+
+        // AvatarCustomizationView now accepts 'auth', 'db', and 'appId' as props
+        const AvatarCustomizationView = ({ user, userData, onSetView, onSetMessage, onUpdateUserData, auth, db, appId }) => {
+            const [currentAvatarConfig, setCurrentAvatarConfig] = useState(userData.avatarConfig || defaultAvatarConfig);
+            const [isLoading, setIsLoading] = useState(false); // For save
+            const [isGeminiLoading, setIsGeminiLoading] = useState({ backstory: false, names: false });
+            const [geminiOutput, setGeminiOutput] = useState({ backstory: '', names: [] });
+            const [purchaseModal, setPurchaseModal] = useState({ isOpen: false, part: null, item: null });
+            
+            const handleSelect = (part, direction) => {
+                const options = avatarOptions[part];
+                const currentIndex = options.findIndex(opt => opt.id === currentAvatarConfig[part]);
+                let nextIndex = currentIndex + direction;
+                if (nextIndex < 0) nextIndex = options.length - 1;
+                if (nextIndex >= options.length) nextIndex = 0;
+
+                const newPartId = options[nextIndex].id;
+                const itemToEquip = options[nextIndex];
+
+                // If item is not free and not purchased, open purchase modal
+                if (itemToEquip.price > 0 && !userData.purchasedItems?.includes(itemToEquip.id)) {
+                    setPurchaseModal({ isOpen: true, part, item: itemToEquip });
+                } else {
+                    // Item is free or already purchased, just equip
+                    setCurrentAvatarConfig(prev => ({ ...prev, [part]: newPartId }));
+                    setGeminiOutput({ backstory: '', names: [] }); // Clear Gemini output on change
+                }
+            };
+
+            const confirmPurchase = async () => {
+                const { part, item } = purchaseModal;
+                if (!item || !part) return;
+
+                if (userData.coins >= item.price) {
+                    setIsLoading(true);
+                    try {
+                        const newCoins = userData.coins - item.price;
+                        const newPurchasedItems = [...(userData.purchasedItems || []), item.id];
+                        const newAvatarConfig = { ...currentAvatarConfig, [part]: item.id };
+
+                        const userDocRef = db.collection(`artifacts/${appId}/users/${user.uid}/profile`).doc('data');
+                        await userDocRef.update({
+                            coins: newCoins, // Directly set new coins value
+                            purchasedItems: newPurchasedItems,
+                            avatarConfig: newAvatarConfig // Save avatar change immediately on purchase
+                        });
+                        onUpdateUserData({ ...userData, coins: newCoins, purchasedItems: newPurchasedItems, avatarConfig: newAvatarConfig });
+                        setCurrentAvatarConfig(newAvatarConfig);
+                        onSetMessage(`${item.name} purchased and equipped!`, 'success');
+                        setGeminiOutput({ backstory: '', names: [] });
+                    } catch (err) {
+                        onSetMessage(`Error purchasing: ${err.message}`, 'error');
+                    } finally {
+                        setIsLoading(false);
+                    }
+                } else {
+                    onSetMessage(`Not enough coins to purchase ${item.name}. You need ${item.price - userData.coins} more.`, 'warning');
+                }
+                setPurchaseModal({ isOpen: false, part: null, item: null });
+            };
+
+            const handleSaveAvatar = async () => {
+                setIsLoading(true);
+                try {
+                    const userDocRef = db.collection(`artifacts/${appId}/users/${user.uid}/profile`).doc('data');
+                    await userDocRef.update({
+                        avatarConfig: currentAvatarConfig
+                    });
+                    onUpdateUserData({ ...userData, avatarConfig: currentAvatarConfig });
+                    onSetMessage('Avatar saved successfully!', 'success');
+                } catch (error) {
+                    onSetMessage(`Error saving avatar: ${error.message}`, 'error');
+                } finally {
+                    setIsLoading(false);
+                }
+            };
+
+            const handleGenerateBackstory = async () => {
+                const head = avatarOptions.head.find(h => h.id === currentAvatarConfig.head)?.name || 'Mysterious Entity';
+                const body = avatarOptions.body.find(b => b.id === currentAvatarConfig.body)?.name || 'Abstract Form';
+                const accessory = avatarOptions.accessory.find(a => a.id === currentAvatarConfig.accessory)?.name || 'No Accessory';
+
+                const prompt = `Generate a short and interesting backstory (2-3 sentences) for an avatar that is a ${head} with a ${body} and has a ${accessory}. Make it engaging for a user.`;
+                await callGeminiAPI(prompt);
+            };
+
+            const handleSuggestNames = async () => {
+                const head = avatarOptions.head.find(h => h.id === currentAvatarConfig.head)?.name || 'Unique Being';
+                const body = avatarOptions.body.find(b => b.id === currentAvatarConfig.body)?.name || 'Special Creature';
+                const accessory = avatarOptions.accessory.find(a => a.id === currentAvatarConfig.accessory)?.name || '';
+
+                const prompt = `Suggest 3 creative and cool names for an avatar that is a ${head} with a ${body}${accessory ? ` and has a ${accessory}` : ''}. Provide the names as a JSON array, like: {"names": ["Name1", "Name2", "Name3"]}.`;
+                await callGeminiAPI(prompt, true);
+            };
+
+            const callGeminiAPI = async (prompt, forNames = false) => {
+                const loadingKey = forNames ? 'names' : 'backstory';
+                setIsGeminiLoading(prev => ({ ...prev, [loadingKey]: true }));
+                setGeminiOutput(prev => ({ ...prev, [loadingKey]: forNames ? [] : '' }));
+
+                try {
+                    const apiKey = ""; // Your Gemini API Key - This will be provided by Canvas runtime
+                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+                    
+                    let chatHistory = [];
+                    chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+
+                    const payload = { contents: chatHistory };
+
+                    if (forNames) {
+                        payload.generationConfig = {
+                            responseMimeType: "application/json",
+                            responseSchema: {
+                                type: "OBJECT",
+                                properties: {
+                                    "names": {
+                                        "type": "ARRAY",
+                                        "items": { "type": "STRING" }
+                                    }
+                                },
+                                required: ["names"]
+                            }
+                        };
+                    }
+
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.error?.message || `API Error: ${response.status}`);
+                    }
+
+                    const result = await response.json();
+
+                    if (result.candidates && result.candidates.length > 0 &&
+                        result.candidates[0].content && result.candidates[0].content.parts &&
+                        result.candidates[0].content.parts.length > 0) {
+                        const text = result.candidates[0].content.parts[0].text;
+
+                        if (forNames) {
+                            try {
+                                const parsed = JSON.parse(text);
+                                setGeminiOutput(prev => ({ ...prev, names: parsed.names || [] }));
+                                onSetMessage('Names suggested!', 'success');
+                            } catch (parseError) {
+                                console.error("Failed to parse names JSON:", text, parseError);
+                                onSetMessage('AI suggested names, but there was a problem reading them. Try again!', 'error');
+                            }
+                        } else {
+                            setGeminiOutput(prev => ({ ...prev, backstory: text }));
+                            onSetMessage('Backstory generated!', 'success');
+                        }
+                    } else {
+                        throw new Error("Unexpected API response structure or no content.");
+                    }
+                } catch (error) {
+                    console.error("Gemini API call error:", error);
+                    onSetMessage(`Gemini AI error: ${error.message}`, 'error');
+                } finally {
+                    setIsGeminiLoading(prev => ({ ...prev, [loadingKey]: false }));
+                }
+            };
+
+            const renderPartSelector = (part) => {
+                const selectedOption = avatarOptions[part].find(opt => opt.id === currentAvatarConfig[part]) || avatarOptions[part][0];
+                const isPurchased = selectedOption.price === 0 || userData.purchasedItems?.includes(selectedOption.id);
+                
+                return (
+                    <div className="mb-4 p-3 bg-white rounded-lg shadow">
+                        <div className="flex justify-between items-center mb-2">
+                            <h3 className="text-md font-semibold capitalize text-gray-700">{part}</h3>
+                            {!isPurchased && (
+                                <span className="text-xs bg-yellow-400 text-yellow-900 px-2 py-0.5 rounded-full flex items-center">
+                                    <span className="mr-1">💰</span> {selectedOption.price}
+                                </span>
+                            )}
+                            {isPurchased && selectedOption.price > 0 && (
+                                <span className="text-xs bg-green-400 text-green-900 px-2 py-0.5 rounded-full flex items-center">
+                                    <span className="mr-1">✅</span> Owned
+                                </span>
+                            )}
+                        </div>
+                        <div className="flex items-center justify-between">
+                            <IconButton onClick={() => handleSelect(part, -1)} ariaLabel={`Previous ${part}`} disabled={isLoading || isGeminiLoading.backstory || isGeminiLoading.names}>
+                                ⬅️
+                            </IconButton>
+                            <div className="flex flex-col items-center text-center w-28">
+                                <span className="text-2xl">{selectedOption?.icon}</span> {/* Directly render the icon component */}
+                                <span className="text-xs text-gray-600 mt-1">{selectedOption?.name}</span>
+                            </div>
+                            <IconButton onClick={() => handleSelect(part, 1)} ariaLabel={`Next ${part}`} disabled={isLoading || isGeminiLoading.backstory || isGeminiLoading.names}>
+                                ➡️
+                            </IconButton>
+                        </div>
+                    </div>
+                );
+            };
+
+            return (
+                <div className="min-h-screen bg-gradient-to-br from-teal-100 to-lime-200 p-4 sm:p-6 lg:p-8 selection:bg-lime-300 selection:text-green-900">
+                    <div className="max-w-4xl mx-auto bg-white/95 backdrop-blur-md rounded-xl shadow-2xl p-6 sm:p-8 lg:p-10 border border-lime-300/30">
+                        <header className="mb-8 flex items-center justify-between">
+                            <Button onClick={() => onSetView('dashboard')} variant="ghost" size="md">
+                                ⬅️ Back to Dashboard
+                            </Button>
+                            <h2 className="text-2xl font-bold text-green-700">Customize Your Avatar</h2>
+                            <Button onClick={handleSaveAvatar} variant="success" size="md" disabled={isLoading}>
+                                {isLoading ? <span className="animate-spin mr-2">🔄</span> : <span className="mr-2">💾</span>} Save Avatar
+                            </Button>
+                        </header>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            {/* Avatar Preview and Controls */}
+                            <div className="flex flex-col items-center justify-center">
+                                <AvatarPreview config={currentAvatarConfig} scale={1.4} />
+                                <div className="mt-6 w-full max-w-md">
+                                    <h3 className="text-xl font-semibold text-green-700 mb-3 text-center">Customize Parts</h3>
+                                    {Object.keys(avatarOptions).map(part => (
+                                        <div key={part} className="flex items-center justify-between mb-3 p-2 rounded-md bg-lime-100/80 border border-lime-200">
+                                            <IconButton onClick={() => handleSelect(part, -1)} ariaLabel={`Previous ${part}`} disabled={isLoading || isGeminiLoading.backstory || isGeminiLoading.names}>
+                                                ⬅️
+                                            </IconButton>
+                                            <span className="font-medium text-green-600 capitalize">{part}</span>
+                                            <div className="flex items-center space-x-2">
+                                                <span className="text-2xl">{avatarOptions[part].find(opt => opt.id === currentAvatarConfig[part])?.icon}</span>
+                                                <IconButton onClick={() => handleSelect(part, 1)} ariaLabel={`Next ${part}`} disabled={isLoading || isGeminiLoading.backstory || isGeminiLoading.names}>
+                                                    ➡️
+                                                </IconButton>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                            
+                            {/* AI Helper Section */}
+                            <div className="p-4 rounded-md bg-lime-50/80 border border-lime-200">
+                                <h3 className="text-xl font-semibold text-green-700 mb-3 flex items-center">
+                                    <span className="mr-2 text-lime-500 text-2xl">🧠</span> Super AI Helper
+                                </h3>
+                                <p className="text-sm text-green-600 mb-4">Let AI suggest a backstory and names for your unique avatar!</p>
+
+                                <div className="mb-4">
+                                    <Button onClick={handleGenerateBackstory} variant="secondary" disabled={isGeminiLoading.backstory || isLoading} className="w-full !text-green-700 !bg-lime-200 hover:!bg-lime-300">
+                                        {isGeminiLoading.backstory ? <span className="animate-spin mr-2">🔄</span> : <span className="mr-2">🧠</span>} Generate Backstory
+                                    </Button>
+                                    <Button onClick={handleSuggestNames} variant="secondary" disabled={isGeminiLoading.names || isLoading} className="w-full !text-green-700 !bg-lime-200 hover:!bg-lime-300 mt-2">
+                                        {isGeminiLoading.names ? <span className="animate-spin mr-2">🔄</span> : <span className="mr-2">✨</span>} Suggest Names
+                                    </Button>
+                                </div>
+
+                                { (geminiOutput.backstory || geminiOutput.names.length > 0 || isGeminiLoading.backstory || isGeminiLoading.names) &&
+                                    <div className="mt-6 p-4 bg-gray-50 rounded-lg shadow w-full">
+                                        {isGeminiLoading.backstory && <div className="text-center py-2"><span className="animate-spin text-purple-500 text-xl">🔄</span> <p className="text-sm">Generating backstory...</p></div>}
+                                        {geminiOutput.backstory && !isGeminiLoading.backstory && <div className="mb-3"><h3 className="font-semibold text-purple-700">Backstory:</h3><p className="text-xs text-gray-600 whitespace-pre-wrap">{geminiOutput.backstory}</p></div>}
+                                        {isGeminiLoading.names && <div className="text-center py-2"><span className="animate-spin text-teal-500 text-xl">🔄</span> <p className="text-sm">Suggesting names...</p></div>}
+                                        {geminiOutput.names.length > 0 && !isGeminiLoading.names && <div><h3 className="font-semibold text-teal-700">Suggested Names:</h3><ul className="list-disc list-inside text-xs text-gray-600">{geminiOutput.names.map((n,i)=><li key={i}>{n}</li>)}</ul></div>}
+                                </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                    {/* Purchase Confirmation Modal */}
+                    <Modal
+                        isOpen={purchaseModal.isOpen}
+                        onClose={() => setPurchaseModal({ isOpen: false, part: null, item: null })}
+                        title={`Buy ${purchaseModal.item?.name}?`}
+                        onConfirm={confirmPurchase}
+                        confirmText={isLoading ? "Processing..." : `Buy for ${purchaseModal.item?.price} Coins`}
+                        confirmVariant="primary"
+                    >
+                        <p>This item costs <strong className="font-bold text-yellow-600">{purchaseModal.item?.price} coins</strong>. You currently have <strong className="font-bold text-yellow-600">{userData.coins} coins</strong>.</p>
+                        <p className="mt-2">Are you sure you want to buy and equip this {purchaseModal.part}?</p>
+                    </Modal>
+                </div>
+            );
+        };
+
+
+        // --- Main App Component ---
+        function App() {
+            const [authInstance, setAuthInstance] = useState(null);
+            const [dbInstance, setDbInstance] = useState(null);
+            const [currentUser, setCurrentUser] = useState(null);
+            const [userData, setUserData] = useState(null); // Firestore user data (profile, coins, etc.)
+            const [isLoadingAuth, setIsLoadingAuth] = useState(true);
+            const [currentView, setCurrentView] = useState('loading'); // loading, auth, verify-email, dashboard, customize-avatar
+            const [message, setMessage] = useState('');
+            const [messageType, setMessageType] = useState('');
+
+            // Define firebaseConfig and appId within the App component's scope
+            const firebaseConfig = (() => {
+                try {
+                    if (typeof window.__firebase_config === 'string' && window.__firebase_config !== 'undefined') {
+                        return JSON.parse(window.__firebase_config);
+                    }
+                } catch (e) {
+                    console.error("Error parsing __firebase_config:", e);
+                }
+                // Fallback for local testing or if __firebase_config is problematic
+                return {
+                  apiKey: "AIzaSyB-HNU5ftwHQctX2wPBA1eILaBtwSatWNs",
+                  authDomain: "math-explorers-90ca8.firebaseapp.com",
+                  projectId: "math-explorers-90ca8",
+                  storageBucket: "math-explorers-90ca8.firebasestorage.app",
+                  messagingSenderId: "624369960795",
+                  appId: "1:624369960795:web:a98501ae90a9c25b14fc7e"
+                };
+            })();
+
+            const appId = typeof window.__app_id !== 'undefined' ? window.__app_id : 'math-explorers-90ca8';
+
+
+            const handleSetMessage = useCallback((msg, type) => {
+                setMessage(msg);
+                setMessageType(type);
+                const timer = setTimeout(() => {
+                    setMessage('');
+                    setMessageType('');
+                }, 5000); // Message disappears after 5 seconds
+                return () => clearTimeout(timer);
+            }, []);
+
+            const handleSignOut = async () => {
+                if (authInstance) { // Use authInstance
+                    try {
+                        await authInstance.signOut(); // Use authInstance
+                        handleSetMessage('You have been logged out.', 'info');
+                        setCurrentUser(null);
+                        setUserData(null);
+                        setCurrentView('auth');
+                    } catch (error) {
+                        handleSetMessage(`Error logging out: ${error.message}`, 'error');
+                        console.error("Logout error:", error);
+                    }
+                }
+            };
+
+            // Firebase Initialization and Auth Listener
+            useEffect(() => {
+                let unsubscribeAuth = () => {};
+                let unsubscribeUserData = () => {};
+
+                const initializeFirebase = async () => {
+                    try {
+                        // Use the firebaseConfig defined in App component scope
+                        const app = firebase.initializeApp(firebaseConfig);
+                        const auth = app.auth(); // Use app.auth() for compat library
+                        const db = app.firestore(); // Use app.firestore() for compat library
+
+                        setAuthInstance(auth);
+                        setDbInstance(db);
+
+                        unsubscribeAuth = auth.onAuthStateChanged(async (user) => {
+                            if (user) {
+                                setCurrentUser(user);
+                                if (!user.emailVerified) {
+                                    setCurrentView('verify-email');
+                                } else {
+                                    // Now appId is in scope
+                                    const userDocRef = db.collection(`artifacts/${appId}/users/${user.uid}/profile`).doc('data');
+                                    unsubscribeUserData = userDocRef.onSnapshot((docSnapshot) => { // Use onSnapshot directly on docRef
+                                        if (docSnapshot.exists()) {
+                                            setUserData(docSnapshot.data());
+                                            setCurrentView('dashboard'); // Set to dashboard only if user data exists
+                                        } else {
+                                            console.warn("User document not found, creating default data.");
+                                            // Now appId is in scope
+                                            db.collection(`artifacts/${appId}/users/${user.uid}/profile`).doc('data').set({ // Use collection and doc for set
+                                                email: user.email,
+                                                displayName: user.displayName || 'New User',
+                                                coins: 100,
+                                                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                                                avatarConfig: defaultAvatarConfig,
+                                                purchasedItems: [defaultAvatarConfig.head, defaultAvatarConfig.body, defaultAvatarConfig.accessory]
+                                            }).then(() => {
+                                                setUserData({
+                                                    email: user.email,
+                                                    displayName: user.displayName || 'New User',
+                                                    coins: 100,
+                                                    avatarConfig: defaultAvatarConfig,
+                                                    purchasedItems: [defaultAvatarConfig.head, defaultAvatarConfig.body, defaultAvatarConfig.accessory]
+                                                });
+                                                setCurrentView('dashboard');
+                                            }).catch(error => {
+                                                console.error("Error creating user document:", error);
+                                                handleSetMessage(`Failed to create user profile: ${error.message}`, 'error');
+                                                handleSignOut(); // Sign out if profile creation fails
+                                            });
+                                        }
+                                    }, (error) => {
+                                        console.error("Error listening to user data:", error);
+                                        handleSetMessage(`Failed to load user data: ${error.message}`, 'error');
+                                        handleSignOut(); // Sign out on listener error
+                                    });
+                                }
+                            } else {
+                                setCurrentUser(null);
+                                setUserData(null);
+                                setCurrentView('auth');
+                            }
+                            setIsLoadingAuth(false);
+                        });
+
+                        // Attempt initial sign-in if no user is present after auth listener is set up
+                        if (!auth.currentUser) {
+                            const initialAuthToken = typeof window.__initial_auth_token !== 'undefined' ? window.__initial_auth_token : null;
+                            try {
+                                if (initialAuthToken) {
+                                    await auth.signInWithCustomToken(initialAuthToken);
+                                } else {
+                                    await auth.signInAnonymously();
+                                }
+                            } catch (error) {
+                                console.warn("Attempted initial sign-in failed (might be a timing issue, onAuthStateChanged will re-evaluate):", error);
+                            }
+                        }
+
+                    } catch (error) {
+                        console.error("Firebase initialization or initial authentication error:", error);
+                        handleSetMessage(`App startup error: ${error.message}`, 'error');
+                        setIsLoadingAuth(false);
+                        setCurrentView('error'); // Set a specific error view
+                    }
+                };
+
+                initializeFirebase();
+
+                return () => {
+                    unsubscribeAuth();
+                    unsubscribeUserData();
+                };
+            }, [handleSetMessage, firebaseConfig, appId]); // Added firebaseConfig and appId to dependencies
+
+            // Render logic based on currentView
+            let content;
+            if (isLoadingAuth || currentView === 'loading') {
+                content = (
+                    <div className="flex flex-col justify-center items-center h-screen bg-gradient-to-br from-blue-100 to-purple-100">
+                        <span className="animate-spin text-purple-500 text-8xl">🔄</span>
+                        <p className="mt-6 text-xl font-medium text-slate-700">Loading your Avatar Adventure...</p>
+                    </div>
+                );
+            } else if (currentView === 'auth') {
+                content = <AuthView onSetView={setCurrentView} onSetMessage={handleSetMessage} auth={authInstance} db={dbInstance} appId={appId} />;
+            } else if (currentView === 'verify-email') {
+                content = <VerifyEmailView userEmail={currentUser?.email} onSetMessage={handleSetMessage} auth={authInstance} />;
+            } else if (currentView === 'dashboard' && currentUser && userData) {
+                content = <DashboardView user={currentUser} userData={userData} onSetView={setCurrentView} onSignOut={handleSignOut} onSetMessage={handleSetMessage} auth={authInstance} db={dbInstance} appId={appId} />;
+            } else if (currentView === 'customize-avatar' && currentUser && userData) {
+                content = <AvatarCustomizationView user={currentUser} userData={userData} onSetView={setCurrentView} onSetMessage={handleSetMessage} onUpdateUserData={setUserData} auth={authInstance} db={dbInstance} appId={appId} />;
+            } else if (currentView === 'error') {
+                content = (
+                    <div className="flex flex-col justify-center items-center h-screen bg-red-100">
+                        <span className="text-red-500 text-6xl">⚠️</span>
+                        <p className="mt-4 text-red-700 text-lg">An error occurred during app startup. Please try again.</p>
+                        <Button onClick={() => window.location.reload()} className="mt-4">Reload App</Button>
+                    </div>
+                );
+            } else {
+                content = (
+                    <div className="flex flex-col justify-center items-center h-screen bg-red-100">
+                        <span className="text-red-500 text-6xl">⚠️</span>
+                        <p className="mt-4 text-red-700 text-lg">Something went wrong or you are not logged in.</p>
+                        <Button onClick={() => setCurrentView('auth')} className="mt-4">Go to Login</Button>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="App">
+                    {content}
+                    <MessageBox message={message} type={messageType} onClose={() => setMessage('')} />
+                </div>
+            );
+        }
+
+        // Render the React App
+        const container = document.getElementById('root');
+        const root = createRoot(container);
+        root.render(<App />);
+
+    </script>
+</body>
+</html>
